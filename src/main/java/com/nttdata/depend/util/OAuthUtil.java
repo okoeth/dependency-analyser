@@ -33,6 +33,7 @@ import org.json.JSONTokener;
 public class OAuthUtil {
     private final static Logger LOGGER = Logger.getLogger(OAuthUtil.class.getName());
     
+    private static final String OAUTH_URL="https://login.salesforce.com/services/oauth2/token";
     private static final String URL_PATTERN="/services/";
     private static final String ACCESS_TOKEN="access_token";
     private static final String INSTANCE_URL="instance_url";
@@ -46,17 +47,34 @@ public class OAuthUtil {
     }
     
     private void createSession(String code) {
-        try {
-            String url = "https://login.salesforce.com/services/oauth2/token";
-            HttpPost httppost = new HttpPost(url);
-
-            // Params
-            List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(1);
+        try {           
+            String clientId = System.getenv("DEPENDENCY_ANALYSER_CLIENT_ID");
+            if (clientId==null) {
+                LOGGER.log(Level.SEVERE, "DEPENDENCY_ANALYSER_CLIENT_ID not found in env");
+            } else {
+                LOGGER.log(Level.INFO, "DEPENDENCY_ANALYSER_CLIENT_ID{0}", clientId);
+            }
+            String clientSecret = System.getenv("DEPENDENCY_ANALYSER_CLIENT_SECRET");
+            if (clientSecret==null) {
+                LOGGER.log(Level.SEVERE, "DEPENDENCY_ANALYSER_CLIENT_SECRET not found in env");
+            } else {
+                LOGGER.log(Level.INFO, "DEPENDENCY_ANALYSER_CLIENT_SECRET: {0}", clientSecret);
+            }
+            String requestURI = System.getenv("DEPENDENCY_ANALYSER_REQUEST_URI");
+            if (requestURI==null) {
+                LOGGER.log(Level.SEVERE, "DEPENDENCY_ANALYSER_REQUEST_URI not found in env");
+            } else {
+                LOGGER.log(Level.INFO, "\"DEPENDENCY_ANALYSER_REQUEST_URI: {0}", requestURI);
+            }
+            
+            List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
             nameValuePairs.add(new BasicNameValuePair("code", code));
             nameValuePairs.add(new BasicNameValuePair("grant_type", "authorization_code"));
-            nameValuePairs.add(new BasicNameValuePair("client_id", "3MVG99qusVZJwhskIotd6JY8Z09JPF4yCa7FQ8XdnFA8_b_VU9IAp4jTfA1wDGUVMxBDt8BR6Lda4cZpj2km2"));
-            nameValuePairs.add(new BasicNameValuePair("client_secret", "589585540289722811"));
-            nameValuePairs.add(new BasicNameValuePair("redirect_uri", "http://localhost:8989/dependency-analyser/callback"));
+            nameValuePairs.add(new BasicNameValuePair("client_id", clientId));
+            nameValuePairs.add(new BasicNameValuePair("client_secret", clientSecret));
+            nameValuePairs.add(new BasicNameValuePair("redirect_uri", requestURI));
+
+            HttpPost httppost = new HttpPost(OAUTH_URL);
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs, "UTF-8"));
 
             // Execute

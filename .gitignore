@@ -2,3 +2,5 @@
 /dependency-analyser.sublime-project
 /.settings/*
 /.classpath
+/.project
+/target/*

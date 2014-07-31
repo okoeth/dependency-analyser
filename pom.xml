@@ -66,21 +66,21 @@
                 <artifactId>spring-webmvc</artifactId>
                 <version>${spring.version}</version>
         </dependency>	
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+            <version>7.6.0.v20120127</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty-runner</artifactId>
+            <version>7.6.0.v20120127</version>
+            <!-- <version>7.4.5.v20110725</version> -->
+        </dependency>
     </dependencies>	
     <build>
         <finalName>dependency-analyser</finalName>
         <plugins>
-            <!--
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
-                <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
-                </configuration>
-            </plugin>
-            -->
             <plugin> 
                 <groupId>org.codehaus.mojo</groupId> 
                 <artifactId>build-helper-maven-plugin</artifactId> 
@@ -139,30 +139,28 @@
                             <groupId>javax.xml.stream</groupId>
                             <artifactId>stax-api</artifactId>
                         </exclusion>
-                        <!--
-                        <exclusion>
-                            <artifactId>jaxb-api</artifactId>
-                            <groupId>javax.xml.bind</groupId>
-                        </exclusion>
-                        <exclusion>
-                            <artifactId>jaxb-impl</artifactId>
-                            <groupId>com.sun.xml.bind</groupId>
-                        </exclusion>
-                        <exclusion>
-                            <groupId>javax.activation</groupId>
-                            <artifactId>activation</artifactId>
-                        </exclusion>
-                        -->                    
 	            </exclusions>
 	          </dependency>
 	        </dependencies>
 	    </plugin>		
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals><goal>copy-dependencies</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.mortbay.jetty</groupId>
                 <artifactId>maven-jetty-plugin</artifactId>
                 <version>6.1.10</version>
                 <configuration>
-                    <webApp>${basedir}/target/mycustom.war</webApp>
+                    <webApp>${basedir}/target/dependency-analyser.war</webApp>
                 </configuration>
             </plugin>  
 	</plugins>

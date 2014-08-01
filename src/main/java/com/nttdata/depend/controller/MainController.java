@@ -11,28 +11,56 @@ import com.sforce.soap.tooling.ApexClass;
 import com.sforce.soap.tooling.SessionHeader;
 import com.sforce.soap.tooling.SforceServicePortType;
 import com.sforce.soap.tooling.SforceServiceService;
+import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.servlet.ServletContext;
+import javax.xml.namespace.QName;
 import javax.xml.ws.BindingProvider;
+import org.springframework.beans.factory.annotation.Autowired;
  
 @Controller
 @RequestMapping("/")
-public class MainController {
+public class MainController {    
     private final static Logger LOGGER = Logger.getLogger(MainController.class.getName());
 
+    private final static String TOOLING_WSDL = "/WEB-INF/wsdl/toolingapi.wsdl";
+    @Autowired
+    ServletContext context;
+    
+    @RequestMapping(value="/test", method = RequestMethod.GET)
+    public String test(ModelMap model) {
+        try {
+            LOGGER.info("Test entered");
+
+            String wsdlFileName = "/WEB-INF/wsdl/toolingapi.wsdl";
+            URL url = context.getResource(wsdlFileName);
+
+            LOGGER.info("WSDL URL:"+url.toString());
+
+            model.addAttribute("message", "Hello world"+url.toString());
+        } catch (Exception e) {
+            model.addAttribute("message", "Hello world"+e);
+        }
+        return "class_list";
+    }
+    
     @RequestMapping(value="/callback", method = RequestMethod.GET)
     public String callback(@RequestParam String code, ModelMap model) {
         LOGGER.info("Callback entered");
-        try {
-            OAuthUtil oaUtil = new OAuthUtil(code);
-            String accessToken = oaUtil.getOAuthToken();
+        try {            
+            URL url = context.getResource(TOOLING_WSDL);
+            LOGGER.log(Level.INFO, "WSDL URL:{0}", url.toString());
             
-            SforceServiceService service = new SforceServiceService();
+            SforceServiceService service = new SforceServiceService(
+                    url, new QName("urn:tooling.soap.sforce.com", "SforceServiceService"));
             SforceServicePortType port = service.getSforceService();
-            SessionHeader sessionHeader = new SessionHeader();
-            sessionHeader.setSessionId(accessToken);
             
+            OAuthUtil oaUtil = new OAuthUtil(code);
             oaUtil.reconfigureBindingProvider((BindingProvider) port);
+            String accessToken = oaUtil.getOAuthToken();
+            SessionHeader sessionHeader = new SessionHeader();
+            sessionHeader.setSessionId(accessToken); 
             
             ApexClass[] apexClasses =
                 port.query("select Id, Name, Body from ApexClass where NamespacePrefix = null", sessionHeader)

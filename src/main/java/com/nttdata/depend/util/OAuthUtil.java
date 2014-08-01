@@ -7,6 +7,8 @@
 package com.nttdata.depend.util;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -33,39 +35,58 @@ import org.json.JSONTokener;
 public class OAuthUtil {
     private final static Logger LOGGER = Logger.getLogger(OAuthUtil.class.getName());
     
-    private static final String OAUTH_URL="https://login.salesforce.com/services/oauth2/token";
+    private static final String OAUTH_TOKEN_URL="https://login.salesforce.com/services/oauth2/token";
+    private static final String OAUTH_LOGIN_URL="https://login.salesforce.com/services/oauth2/authorize";
     private static final String URL_PATTERN="/services/";
     private static final String ACCESS_TOKEN="access_token";
     private static final String INSTANCE_URL="instance_url";
     
+    private static final String clientId;
+    private static final String clientSecret;
+    private static final String requestURI;
+    
     private JSONObject session;
     private final HttpClient httpClient;
     
+    public static String getLoginURL () throws UnsupportedEncodingException {
+        StringBuilder loginURL = new StringBuilder(OAUTH_LOGIN_URL);
+        loginURL.append("?");
+        loginURL.append("response_type=code");
+        loginURL.append("&");
+        loginURL.append("client_id=").append(clientId);
+        loginURL.append("&");
+        loginURL.append("redirect_uri=").append(URLEncoder.encode(requestURI, "UTF-8"));
+        return loginURL.toString();
+    }
+
+    static {
+        LOGGER.info("Static initialisation");
+        clientId = System.getenv("DEPENDENCY_ANALYSER_CLIENT_ID");
+        if (clientId==null) {
+            LOGGER.log(Level.SEVERE, "DEPENDENCY_ANALYSER_CLIENT_ID not found in env");
+        } else {
+            LOGGER.log(Level.INFO, "DEPENDENCY_ANALYSER_CLIENT_ID{0}", clientId);
+        }
+        clientSecret = System.getenv("DEPENDENCY_ANALYSER_CLIENT_SECRET");
+        if (clientSecret==null) {
+            LOGGER.log(Level.SEVERE, "DEPENDENCY_ANALYSER_CLIENT_SECRET not found in env");
+        } else {
+            LOGGER.log(Level.INFO, "DEPENDENCY_ANALYSER_CLIENT_SECRET: {0}", clientSecret);
+        }
+        requestURI = System.getenv("DEPENDENCY_ANALYSER_REQUEST_URI");
+        if (requestURI==null) {
+            LOGGER.log(Level.SEVERE, "DEPENDENCY_ANALYSER_REQUEST_URI not found in env");
+        } else {
+            LOGGER.log(Level.INFO, "\"DEPENDENCY_ANALYSER_REQUEST_URI: {0}", requestURI);
+        }        
+    }            
     public OAuthUtil (String code) {
         httpClient = HttpClientBuilder.create().build();
         createSession(code);
     }
-    
+      
     private void createSession(String code) {
         try {           
-            String clientId = System.getenv("DEPENDENCY_ANALYSER_CLIENT_ID");
-            if (clientId==null) {
-                LOGGER.log(Level.SEVERE, "DEPENDENCY_ANALYSER_CLIENT_ID not found in env");
-            } else {
-                LOGGER.log(Level.INFO, "DEPENDENCY_ANALYSER_CLIENT_ID{0}", clientId);
-            }
-            String clientSecret = System.getenv("DEPENDENCY_ANALYSER_CLIENT_SECRET");
-            if (clientSecret==null) {
-                LOGGER.log(Level.SEVERE, "DEPENDENCY_ANALYSER_CLIENT_SECRET not found in env");
-            } else {
-                LOGGER.log(Level.INFO, "DEPENDENCY_ANALYSER_CLIENT_SECRET: {0}", clientSecret);
-            }
-            String requestURI = System.getenv("DEPENDENCY_ANALYSER_REQUEST_URI");
-            if (requestURI==null) {
-                LOGGER.log(Level.SEVERE, "DEPENDENCY_ANALYSER_REQUEST_URI not found in env");
-            } else {
-                LOGGER.log(Level.INFO, "\"DEPENDENCY_ANALYSER_REQUEST_URI: {0}", requestURI);
-            }
             
             List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
             nameValuePairs.add(new BasicNameValuePair("code", code));
@@ -74,7 +95,7 @@ public class OAuthUtil {
             nameValuePairs.add(new BasicNameValuePair("client_secret", clientSecret));
             nameValuePairs.add(new BasicNameValuePair("redirect_uri", requestURI));
 
-            HttpPost httppost = new HttpPost(OAUTH_URL);
+            HttpPost httppost = new HttpPost(OAUTH_TOKEN_URL);
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs, "UTF-8"));
 
             // Execute
